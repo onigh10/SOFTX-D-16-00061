@@ -28,8 +28,11 @@
 					<input type="button" value="Translate to XML &raquo;" onclick="nmlToXml()"/>
 				</div>
 				<div style="margin-left: 10px">
-					Load: <input type="file" id="nmlInFile"/>
-					<input type="submit" value="Reload" onclick="reloadText('nmlInFile','nmlDisplay')"/><br/>
+					<form id="nmlFileSelect">
+						Load: <input type="file" id="nmlInFile"/>
+						<input type="button" value="Reset" onclick="resetForm('nmlFileSelect','nmlDisplay')"/>
+					<input type="submit" value="Reload" onclick="reloadText('nmlInFile','nmlDisplay')"/>
+					</form>
 					Save: <input type="text" id="nmlOutFile" size="35"/>
 					<input type="submit" value="Save" onclick="saveText('nmlDisplay','nmlOutFile')"/>
 				</div>
@@ -42,14 +45,45 @@
 					XML file
 				</div>
 				<div style="margin-left: 10px">
-					Load: <input type="file" id="xmlInFile"/>
-					<input type="submit" value="Reload" onclick="reloadText('xmlInFile','xmlDisplay')"/><br/>
+					<form id="xmlFileSelect">
+						Load: <input type="file" id="xmlInFile"/>
+						<input type="button" value="Reset" onclick="resetForm('xmlFileSelect','xmlDisplay')"/>
+					<input type="submit" value="Reload" onclick="reloadText('xmlInFile','xmlDisplay')"/>
+					</form>
 					Save: <input type="text" id="xmlOutFile" size="35"/>
 					<input type="submit" value="Save" onclick="saveText('xmlDisplay','xmlOutFile')"/>
 				</div>
 				<textarea class="text-box" id="xmlDisplay" wrap="logical" placeholder="Select an XML file to load or drag it to this text pane."></textarea>
 			</div>
 		</div>
+		
+		<!-- Template XML file that can be applied to HTML form           -->
+		<!-- Values of the following elements are replaced by those of    -->
+		<!-- the template:                                                -->
+		<!--   groupSummary, groupDetail, objectSummary, objectDetail,    -->
+		<!--  numberOfElements, dataType, dataSize, unit                  -->
+		<!-- When Now button is clicked, the template is applied to the   -->
+		<!-- current HTML form.                                           -->
+		<!-- When Auto checkbox is checked, the replacements will be done -->
+		<!-- after HTML is generated from the XML in the right pane.      -->
+		
+		<div style="display: table; border: solid 2px black; width: 99.8%;">
+			<div style="margin-left: 10px">
+			<form id="templateFileSelect" style="float:left">
+				Template XML file &nbsp; &nbsp; Load: <input type="file" id="templateInFile"/>
+				<input type="button" value="Reset" onclick="resetForm('templateFileSelect','templateDisplay')"/>
+			</form>
+			<input type="submit" id="templateSwitch" value="Show Template" onclick="toggleDisplay('templateSwitch','templateDisplay')"/>
+
+			<span style="font-size:11px">Apply Template to HTML</span>
+			
+			<input type="button" value="Now" onclick="applyXmlToHtml()"/>
+			<span style="font-size:11px">Auto</span> <input type="checkbox" id="templateCheckbox"/>
+			<br/>
+			<textarea style="width:98.7%;height:400px;font-family:consolas,'courier new',monospace;display:none;" id="templateDisplay" wrap="logical"></textarea>
+			</div>
+		</div>
+		
  		<div style="clear:both"></div>
  
 	</div>
@@ -58,7 +92,7 @@
 	<!-- XSLT for pretty print XML -->
 	<!-- ========================= -->
 
-	<!-- Indent supported -->
+	<!-- If indent is supported in this browser, use this XSLT -->
 	
 	<input type="submit" id="xslt4IndentSwitch" value="Show XSLT for Indent" onclick="toggleDisplay('xslt4IndentSwitch','xslt4IndentDisplay')"/>
 
@@ -76,7 +110,7 @@
 
 	</textarea>
 
-	<!-- Indent not supported -->
+	<!-- If indent is not supported in this browser, use this XSLT -->
 	
 	<input type="submit" id="xslt4AltIndentSwitch" value="Show XSLT for Alt Indent" onclick="toggleDisplay('xslt4AltIndentSwitch','xslt4AltIndentDisplay')"/>
 
@@ -130,9 +164,9 @@
 </xsl:template>
 
 <xsl:template match="orphan">
-	<xsl:text>&#xa0;</xsl:text> <!--sp-->
+	<xsl:text>&#x26;&#x23;&#x78;&#x61;&#x30;&#x3b;</xsl:text> <!--sp-->
 	<xsl:value-of select="."/>
-	<xsl:text>&#xa;</xsl:text> <!--nl-->
+	<xsl:text>&#x26;&#x23;&#x78;&#x61;&#x3b;</xsl:text> <!--nl-->
 </xsl:template>
 
 <xsl:template match="group">
@@ -169,7 +203,9 @@
 
 <xsl:template match="complex">
 	<xsl:text>(</xsl:text>
-	<xsl:apply-templates select="value"/>
+	<!-- <xsl:apply-templates select="value"/> -->
+	<xsl:apply-templates select="re/value"/>
+	<xsl:apply-templates select="im/value"/>
 	<xsl:text>)</xsl:text>
 	<xsl:text>,</xsl:text>
 </xsl:template>
@@ -177,7 +213,8 @@
 <xsl:template match="value">
 	<xsl:value-of select="."/>
 	<xsl:choose>
-		<xsl:when test="name(..)='complex' and current()=../value[last()]">
+		<!-- <xsl:when test="name(..)='complex' and current()=../value[last()]"> -->
+		<xsl:when test="name(..)='im'">
 		</xsl:when>
 		<xsl:otherwise>
 			<xsl:text>,</xsl:text>
@@ -257,7 +294,7 @@
 								<xsl:attribute name="href">
 									<xsl:text>#</xsl:text>
 									<xsl:value-of select="@name"/>
-										<xsl:if test="@index">
+									<xsl:if test="@index">
 										<xsl:value-of select="translate(@index,' ','')"/>
 									</xsl:if>
 
@@ -287,16 +324,20 @@
 
 <xsl:template match="group">
 	<xsl:element name="div"> <!--div for group start-->
-		<xsl:attribute name="style">
-			<xsl:text>border: 5px double black;</xsl:text>
-			<xsl:text>padding: 10px;</xsl:text>
-			<xsl:text>margin-bottom: 10px;</xsl:text>
+		<xsl:attribute name="id">
+			<xsl:text>group-</xsl:text>
+			<xsl:value-of select="@name"/>
 		</xsl:attribute>
 		<xsl:attribute name="data-class">
 			<xsl:text>group</xsl:text>
 		</xsl:attribute>
 		<xsl:attribute name="data-name">
 			<xsl:value-of select="@name"/>
+		</xsl:attribute>
+		<xsl:attribute name="style">
+			<xsl:text>border: 5px double black;</xsl:text>
+			<xsl:text>padding: 10px;</xsl:text>
+			<xsl:text>margin-bottom: 10px;</xsl:text>
 		</xsl:attribute>
 		<xsl:element name="h3">
 			<xsl:attribute name="id">
@@ -312,13 +353,17 @@
 		<!-- Group summary -->
 		<!--++++++++++++++ -->
 		<xsl:element name="span"> <!--span for group summary start-->
+			<xsl:attribute name="id">
+				<xsl:text>groupSummary-</xsl:text>
+				<xsl:value-of select="@name"/>
+			</xsl:attribute>
+			<xsl:attribute name="data-class">
+				<xsl:text>groupSummary</xsl:text>
+			</xsl:attribute>
 			<xsl:attribute name="contenteditable">true</xsl:attribute>
 			<xsl:attribute name="style">
 				<xsl:text>display: inline-block;</xsl:text>
 				<xsl:text>margin: 2px;</xsl:text>
-			</xsl:attribute>
-			<xsl:attribute name="data-class">
-				<xsl:text>groupSummary</xsl:text>
 			</xsl:attribute>
 			<xsl:choose>
 				<xsl:when test="./groupSummary">
@@ -350,7 +395,7 @@
 				<xsl:text>toggleFold(</xsl:text>
 				<xsl:text>'fold-</xsl:text>
 				<xsl:value-of select="@name"/>
-				<xsl:text>','detail-</xsl:text>
+				<xsl:text>','groupDetail-</xsl:text>
 				<xsl:value-of select="@name"/>
 				<xsl:text>')</xsl:text>
 			</xsl:attribute>
@@ -363,17 +408,17 @@
 		<!--+++++++++++++ -->
 		<xsl:element name="span"> <!--span for group detail start-->
 			<xsl:attribute name="id">
-				<xsl:text>detail-</xsl:text>
+				<xsl:text>groupDetail-</xsl:text> <!--2016.10.19-->
 				<xsl:value-of select="@name"/>
+			</xsl:attribute>
+			<xsl:attribute name="data-class">
+				<xsl:text>groupDetail</xsl:text>
 			</xsl:attribute>
 			<xsl:attribute name="contenteditable">true</xsl:attribute>
 			<xsl:attribute name="style">
 				<xsl:text>display: inline-block;</xsl:text>
 				<xsl:text>margin: 2px;</xsl:text>
 				<xsl:text>display: none;</xsl:text>
-			</xsl:attribute>
-			<xsl:attribute name="data-class">
-				<xsl:text>groupDetail</xsl:text>
 			</xsl:attribute>
 			<xsl:choose>
 				<xsl:when test="./groupDetail">
@@ -465,16 +510,16 @@
 							 </xsl:if>
 						</xsl:for-each>
 					</xsl:when>
-
+<!-- 2016.10.11 replace /value with //value to adapt to re and im -->
 					<xsl:when test="$vType = 'complex'">	
 						<xsl:choose>
-							<xsl:when test=".//complex/value[contains(.,'q')] or .//complex/value[contains(., 'Q')]">
+							<xsl:when test=".//complex//value[contains(.,'q')] or .//complex//value[contains(., 'Q')]">
 								<xsl:text>16</xsl:text>
 							</xsl:when>
-							<xsl:when test=".//complex/value[contains(.,'d')] or .//complex/value[contains(., 'D')]">
+							<xsl:when test=".//complex//value[contains(.,'d')] or .//complex//value[contains(., 'D')]">
 								<xsl:text>8</xsl:text>
 							</xsl:when>
-							<xsl:when test=".//complex/value[contains(.,'e')] or .//complex/value[contains(., 'E')]">
+							<xsl:when test=".//complex//value[contains(.,'e')] or .//complex//value[contains(., 'E')]">
 								<xsl:text>4</xsl:text>
 							</xsl:when>
 							<xsl:otherwise>
@@ -518,15 +563,22 @@
 	</xsl:variable> <!--vDataLength end-->
 
 	<xsl:element name="div"> <!--div for object start-->
-		<xsl:attribute name="style">
-			<xsl:text>border: 2px solid black;</xsl:text>
-			<xsl:text>padding: 10px;</xsl:text>
+		<xsl:attribute name="id">
+			<xsl:text>object-</xsl:text>
+			<xsl:value-of select="@name"/>
+			<xsl:if test="@index">
+				<xsl:value-of select="translate(@index,' ','')"/>
+			</xsl:if>
 		</xsl:attribute>
 		<xsl:attribute name="data-class">
 			<xsl:text>object</xsl:text>
 		</xsl:attribute>
 		<xsl:attribute name="data-name">
 			<xsl:value-of select="@name"/>
+		</xsl:attribute>		
+		<xsl:attribute name="style">
+			<xsl:text>border: 2px solid black;</xsl:text>
+			<xsl:text>padding: 10px;</xsl:text>
 		</xsl:attribute>
 
 		<!-- ++++++++++++++++++ -->
@@ -544,14 +596,21 @@
 							<!-- Object summary -->
 							<!-- ++++++++++++++ -->
 							<xsl:element name="span"> <!--span for object summary start-->
+								<xsl:attribute name="id">
+									<xsl:text>objectSummary-</xsl:text>
+									<xsl:value-of select="@name"/>
+									<xsl:if test="@index">
+										<xsl:value-of select="translate(@index,' ','')"/>
+									</xsl:if>
+								</xsl:attribute>
+								<xsl:attribute name="data-class">
+									<xsl:text>objectSummary</xsl:text>
+								</xsl:attribute>								
 								<xsl:attribute name="contenteditable">true</xsl:attribute>
 								<xsl:attribute name="style">
 									<xsl:text>display: inline-block;</xsl:text>
 									<xsl:text>margin: 2px;</xsl:text>
 								</xsl:attribute>
-								<xsl:attribute name="data-class">
-									<xsl:text>objectSummary</xsl:text>
-								</xsl:attribute>								
 								<xsl:choose>
 									<xsl:when test="./objectSummary">
 										<xsl:value-of select="./objectSummary"/>
@@ -569,6 +628,10 @@
 								<xsl:attribute name="id">
 									<xsl:text>fold-</xsl:text>
 									<xsl:value-of select="@name"/>
+									<xsl:if test="@index"> <!--2016.10.19-->
+										<xsl:value-of select="translate(@index,' ','')"/>
+									</xsl:if>
+
 								</xsl:attribute>
 								<xsl:attribute name="style">
 									<xsl:text>display: inline-block;</xsl:text>
@@ -582,8 +645,16 @@
 									<xsl:text>toggleFold(</xsl:text>
 									<xsl:text>'fold-</xsl:text>
 									<xsl:value-of select="@name"/>
-									<xsl:text>','detail-</xsl:text>
+									<xsl:if test="@index"> <!--2016.10.19-->
+										<xsl:value-of select="translate(@index,' ','')"/>
+									</xsl:if>
+
+									<xsl:text>','objectDetail-</xsl:text> <!--2016.10.19-->
 									<xsl:value-of select="@name"/>
+									<xsl:if test="@index"> <!--2016.10.19-->
+										<xsl:value-of select="translate(@index,' ','')"/>
+									</xsl:if>
+
 									<xsl:text>')</xsl:text>
 								</xsl:attribute>
 								<!-- <xsl:text>&triangleright;</xsl:text> -->
@@ -595,17 +666,20 @@
 							<!--++++++++++++++ -->
 							<xsl:element name="span"> <!--span for object detail start-->
 								<xsl:attribute name="id">
-									<xsl:text>detail-</xsl:text>
+									<xsl:text>objectDetail-</xsl:text> <!--2016.10.19-->
 									<xsl:value-of select="@name"/>
+									<xsl:if test="@index"> <!--2016.10.19-->
+										<xsl:value-of select="translate(@index,' ','')"/>
+									</xsl:if>
+								</xsl:attribute>
+								<xsl:attribute name="data-class">
+									<xsl:text>objectDetail</xsl:text>
 								</xsl:attribute>
 								<xsl:attribute name="contenteditable">true</xsl:attribute>
 								<xsl:attribute name="style">
 									<xsl:text>display: inline-block;</xsl:text>
 									<xsl:text>margin: 2px;</xsl:text>
 									<xsl:text>display: none;</xsl:text>
-								</xsl:attribute>
-								<xsl:attribute name="data-class">
-									<xsl:text>objectDetail</xsl:text>
 								</xsl:attribute>
 								<xsl:choose>
 									<xsl:when test="./objectDetail">
@@ -688,11 +762,14 @@
 									</xsl:attribute>
 									<xsl:attribute name="onclick">
 										<xsl:text>contract(&apos;</xsl:text>
+										<!--2016.10.20-->
+										<xsl:text>valueList-</xsl:text>
 										<xsl:value-of select="@name"/>
 										<xsl:if test="@index">
 											<xsl:value-of select="translate(@index,' ','')"/>
 										</xsl:if>
-										<xsl:text>ValueList&apos;)</xsl:text>
+										<!-- <xsl:text>ValueList&apos;)</xsl:text> -->
+										<xsl:text>&apos;)</xsl:text>									
 									</xsl:attribute>
 								</xsl:element>
 
@@ -710,11 +787,14 @@
 									</xsl:attribute>
 									<xsl:attribute name="onclick">
 										<xsl:text>expand(&apos;</xsl:text>
+										<!--2016.10.20-->
+										<xsl:text>valueList-</xsl:text>
 										<xsl:value-of select="@name"/>
 										<xsl:if test="@index">
 											<xsl:value-of select="translate(@index,' ','')"/>
 										</xsl:if>
-										<xsl:text>ValueList&apos;)</xsl:text>
+										<!-- <xsl:text>ValueList&apos;)</xsl:text> -->
+										<xsl:text>&apos;)</xsl:text>
 									</xsl:attribute>
 								</xsl:element>
 
@@ -722,11 +802,18 @@
 								<!-- Number of elements -->
 								<!-- ++++++++++++++++++ -->
 								<xsl:element name="span"> <!--span for number of elements start-->
-									<xsl:attribute name="style">
-										<xsl:text>display: inline-block;</xsl:text>
-									</xsl:attribute>
+								<xsl:attribute name="id">
+									<xsl:text>numberOfElements-</xsl:text>
+									<xsl:value-of select="@name"/>
+									<xsl:if test="@index">
+										<xsl:value-of select="translate(@index,' ','')"/>
+									</xsl:if>
+								</xsl:attribute>
 									<xsl:attribute name="data-class">
 										<xsl:text>numberOfElements</xsl:text>
+									</xsl:attribute>
+									<xsl:attribute name="style">
+										<xsl:text>display: inline-block;</xsl:text>
 									</xsl:attribute>
 									
 									<xsl:choose>
@@ -753,12 +840,10 @@
 								<!-- ++++++++++++++++++ -->
 								<xsl:element name="select"> <!--select for data type selector start-->
 									<xsl:attribute name="id">
-										<xsl:text>select-</xsl:text>
+										<xsl:text>dataType-</xsl:text>
 										<xsl:value-of select="@name"/>
 										<xsl:if test="@index">
-											<!-- <xsl:text>(</xsl:text> -->
 											<xsl:value-of select="translate(@index,' ','')"/>
-											<!-- <xsl:text>)</xsl:text> -->
 										</xsl:if>
 									</xsl:attribute>
 									<xsl:attribute name="data-class">
@@ -770,7 +855,9 @@
 									
 									<xsl:attribute name="onchange">
 										<xsl:text>setSelected(</xsl:text>
-										<xsl:text>'select-</xsl:text>
+										<!--2016.10.20 change select to dataType-->
+										<!-- <xsl:text>'select-</xsl:text> -->
+										<xsl:text>'dataType-</xsl:text>
 										<xsl:value-of select="@name"/>
 										<xsl:if test="@index">
 											<xsl:value-of select="translate(@index,' ','')"/>
@@ -873,6 +960,7 @@
 								-->
 
 									<!--NULL-->
+									<!-- When the values are omitted in NAMELIST, this type is assigned -->
 									<xsl:element name="option">
 										<xsl:attribute name="value">
 											<xsl:text>null</xsl:text>
@@ -891,14 +979,22 @@
 								<!-- Length of data -->
 								<!-- ++++++++++++++ -->
 								<xsl:element name="span"> <!--span for data length start-->
+									<xsl:attribute name="id">
+										<xsl:text>dataSize-</xsl:text>
+										<xsl:value-of select="@name"/>
+										<xsl:if test="@index">
+											<xsl:value-of select="translate(@index,' ','')"/>
+										</xsl:if>
+									</xsl:attribute>
+									<xsl:attribute name="data-class">
+										<xsl:text>dataSize</xsl:text>
+									</xsl:attribute>
+
 									<xsl:attribute name="contenteditable">true</xsl:attribute>
 									<xsl:attribute name="style">
 										<xsl:text>width: 30px;</xsl:text>
 										<xsl:text>border: solid thin;</xsl:text>
 										<xsl:text>padding-left: 5px; padding-right: 5px;</xsl:text>
-									</xsl:attribute>
-									<xsl:attribute name="data-class">
-										<xsl:text>dataSize</xsl:text>
 									</xsl:attribute>
 									<xsl:value-of select="$vDataLength"/>
 								</xsl:element> <!--span for data length end-->
@@ -915,6 +1011,16 @@
 								<!-- Unit of data -->
 								<!-- ++++++++++++ -->
 								<xsl:element name="span"> <!--span for unit start-->
+									<!--2016.10.20-->
+									<xsl:attribute name="id">
+										<xsl:text>unit-</xsl:text>
+										<xsl:value-of select="@name"/>
+										<xsl:if test="@index">
+											<xsl:value-of select="translate(@index,' ','')"/>
+										</xsl:if>
+									</xsl:attribute>
+									<!--2016.10.20-->
+
 									<xsl:attribute name="contenteditable">true</xsl:attribute>
 									<xsl:attribute name="data-class">
 										<xsl:text>unit</xsl:text>
@@ -956,11 +1062,13 @@
 
 				<xsl:element name="tr"> <!--tr for value start-->
 					<xsl:attribute name="id">
+						<!--2016.10.20-->
+						<xsl:text>valueList-</xsl:text>
 						<xsl:value-of select="@name"/>
 						<xsl:if test="@index">
 							<xsl:value-of select="translate(@index,' ','')"/>
 						</xsl:if>
-						<xsl:text>ValueList</xsl:text>
+						<!-- <xsl:text>ValueList</xsl:text> -->
 					</xsl:attribute>
 					<xsl:apply-templates select="repeat|complex|value|comment"/>
 				</xsl:element> <!--tr for value end-->
@@ -989,7 +1097,9 @@
 <xsl:template match="complex">
 	<xsl:param name="pRepeat" select="1"/>
 	<!-- Apply templates only to the 1st child, i.e. real part -->
-	<xsl:apply-templates select="value[1]">
+	<!-- 2016.10.11 To adapt to re and im -->
+	<!-- <xsl:apply-templates select="value[1]"> -->
+	<xsl:apply-templates select="re/value">
 		<xsl:with-param name="pComplex" select="1"/>
 		<xsl:with-param name="pRepeat" select="$pRepeat"/>
 	</xsl:apply-templates>
@@ -1013,7 +1123,9 @@
 			</xsl:when>
 			<xsl:otherwise>
 				<xsl:variable name="vLengthR" select="string-length(string(.))"/>
-				<xsl:variable name="vLengthI" select="string-length(string(following-sibling::value))"/>
+				<!-- 2016.10.11 To adapt to re and im -->
+				<!-- <xsl:variable name="vLengthI" select="string-length(string(following-sibling::value))"/> -->
+				<xsl:variable name="vLengthI" select="string-length(string(../../im/value))"/>
 				<xsl:choose>
 					<xsl:when test="$vLengthR &gt; $vLengthI">
 						<xsl:value-of select="$vLengthR"/>
@@ -1077,7 +1189,18 @@
 							<xsl:attribute name="data-class">
 								<xsl:text>sequential</xsl:text>
 							</xsl:attribute>
-							<xsl:value-of select="count(preceding-sibling::value | preceding-sibling::complex)+count(../preceding-sibling::value | ../preceding-sibling::complex)+count(../../preceding-sibling::complex)+sum(preceding-sibling::repeat/@times)+sum(../preceding-sibling::repeat/@times)+sum(../../preceding-sibling::repeat/@times)+1"/>
+							<!-- 2016.10.11 To adapt to re and im -->
+							<!-- <xsl:value-of select="count(preceding-sibling::value | preceding-sibling::complex)+count(../preceding-sibling::value | ../preceding-sibling::complex)+count(../../preceding-sibling::complex)+sum(preceding-sibling::repeat/@times)+sum(../preceding-sibling::repeat/@times)+sum(../../preceding-sibling::repeat/@times)+1"/> -->
+							<!-- Count the number of preceding elements
+							    and sum the preceding repetition respectively
+							    for the cases of
+							    	1) ordinary value,
+							    	2) ordinary value with repeat,
+							    	3) complex,
+							    	4) complex with repeat
+							-->
+							<xsl:value-of select="count(preceding-sibling::value | ../preceding-sibling::value | ../../preceding-sibling::complex | ../../../preceding-sibling::complex)+sum(preceding-sibling::repeat/@times)+sum(../preceding-sibling::repeat/@times)+sum(../../preceding-sibling::repeat/@times)+sum(../../../preceding-sibling::repeat/@times)+1"/>
+
 						</xsl:element>
 
 						<!-- ++++++++++ -->
@@ -1116,11 +1239,7 @@
 							<xsl:attribute name="data-class">
 								<xsl:text>complex</xsl:text>
 							</xsl:attribute>
-<!--
-							<xsl:element name="label">
-								<xsl:text>(</xsl:text>
-							</xsl:element>
--->
+
 							<xsl:text>(</xsl:text>
 						</xsl:if>
 
@@ -1140,6 +1259,9 @@
 							<xsl:attribute name="data-type">
 								<xsl:value-of select="@type"/>
 							</xsl:attribute>
+							<xsl:attribute name="onchange"> <!--2016.10.18-->
+								<xsl:text>checkInput(this)</xsl:text>
+							</xsl:attribute>
 						</xsl:element> <!--input for data value end-->
 
 						<!-- +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ -->
@@ -1150,7 +1272,9 @@
 							<xsl:element name="input"> <!--input for imaginary part start-->
 								<xsl:attribute name="type">text</xsl:attribute>
 								<xsl:attribute name="value">
-									<xsl:value-of select="following-sibling::value"/>
+									<!-- 2016.10.11 To adapt to re and im -->
+									<!-- <xsl:value-of select="following-sibling::value"/> -->
+									<xsl:value-of select="../../im/value"/>
 								</xsl:attribute>
 								<xsl:attribute name="style">
 									<xsl:text>width:</xsl:text>
@@ -1162,8 +1286,13 @@
 								</xsl:attribute>
 								<xsl:attribute name="data-type">
 									<!-- <xsl:value-of select="@type"/> -->
-									<xsl:value-of select="following-sibling::value/@type"/>
+									<!-- 2016.10.11 To adapt to re and im -->
+									<!-- <xsl:value-of select="following-sibling::value/@type"/> -->
+									<xsl:value-of select="../../im/value/@type"/>
 								</xsl:attribute>
+								<xsl:attribute name="onchange"> <!--2016.10.18-->
+									<xsl:text>checkInput(this)</xsl:text>
+								</xsl:attribute>								
 							</xsl:element> <!--input for imaginary part end-->
 							<xsl:text>)</xsl:text>
 						</xsl:if> <!--if clause for COMPLEX end-->
@@ -1196,14 +1325,16 @@
 <!-- ====== -->
 <!-- ORPHAN -->
 <!-- ====== -->
+<!-- Some Fortran programs use the same NAMELIST file also for formatted I/O. -->
+<!-- Those parts are isolated as orphans, but may not be recovered as the original in the NAMELIST. -->
 
 <xsl:template match="orphan">
 	<xsl:element name="div">
-		<xsl:attribute name="style">
-			<xsl:text>display: none</xsl:text>
-		</xsl:attribute>
 		<xsl:attribute name="data-class">
 			<xsl:text>orphan</xsl:text>
+		</xsl:attribute>
+		<xsl:attribute name="style">
+			<xsl:text>display: none</xsl:text>
 		</xsl:attribute>
 
 		<xsl:value-of select="."/>
@@ -1214,18 +1345,27 @@
 
 	</textarea>
 
-
 	<!-- ============== -->
 	<!-- Web Input Form -->
 	<!-- ============== -->
 
 	<input type="submit" value="Generate HTML Form" onclick="xmlToHtml()"/>	
 
-	<div id="htmlDisplay" class="monospace"></div>
+	<!-- ================== -->
+	<!-- Check input values -->
+	<!-- ================== -->
 
-	<!-- ======================== -->
-	<!-- Generated Web Input Form -->
-	<!-- ======================== -->
+	<input type="submit" value="Check Inputs" onclick="checkValues()"/>
+	
+	<!-- ============== -->
+	<!-- Web Input Form -->
+	<!-- ============== -->
+
+	<div id="htmlDisplay" class="monospace"></div>
+	
+	<!-- ===================== -->
+	<!-- Web Input Form Source -->
+	<!-- ===================== -->
 
 	<input type="submit" value="Generate HTML Source" onclick="generateHtmlSource()"/>
 
@@ -1355,11 +1495,26 @@
 		
 		<xsl:when test="@data-class = 'complex'">
 			<xsl:element name="complex">
+			<!--
 				<xsl:apply-templates>
 					<xsl:with-param name="pComplex" select="1"/>
 				</xsl:apply-templates>
+			-->
+				<xsl:element name="re">
+					<xsl:apply-templates select="./xhtml:input[1]">
+						<xsl:with-param name="pComplex" select="1"/>
+					</xsl:apply-templates>
+				</xsl:element>
+				<xsl:element name="im">
+					<xsl:apply-templates select="./xhtml:input[2]">
+						<xsl:with-param name="pComplex" select="1"/>
+					</xsl:apply-templates>
+				</xsl:element>
+
 			</xsl:element>
 		</xsl:when>
+
+<!-- 2016.10.11 To adapt to re and im -->
 
 		<xsl:when test="@data-class = 'value'">
 			<xsl:element name="value">
@@ -1369,7 +1524,6 @@
 							<xsl:value-of select="ancestor::xhtml:div[@data-class = 'object']//xhtml:select[@data-class = 'dataType']/@data-type"/>
 						</xsl:when>
 						<xsl:otherwise>
-							<!-- <xsl:value-of select="@data-type"/> -->
 							<xsl:choose>
 								<xsl:when test="ancestor::xhtml:div[@data-class = 'object']//xhtml:input[@data-type = 'real']">
 									<xsl:text>real</xsl:text>
@@ -1424,272 +1578,11 @@
 
 	<input type="submit" value="Copy Distilled XML to Right Pane" onclick="copyTextArea('distilledXmlDisplay','xmlDisplay')"/>
 
-	<!-- ================================== -->
-	<!-- XSLT for XML to XSD Transformation -->
-	<!-- ================================== -->
-
-	<input type="submit" id="xslt4XsdSwitch" value="Show XSLT for XSD" onclick="toggleDisplay('xslt4XsdSwitch','xslt4XsdDisplay')"/>
-
-	<textarea style="width:100%;height:400px;font-family:consolas,'courier new',monospace;display:none;" id="xslt4XsdDisplay" wrap="logical">
-<?xml version="1.0" encoding="UTF-8"?>
-<xsl:stylesheet version="2.0" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
-<xsl:output method="xml" version="1.0" indent="yes" encoding="UTF-8" omit-xml-declaration="no"/>
-
-<xsl:template match="/namelist">
-	<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
-		<xsd:element name="namelist">
-			<xsd:complexType>			
-				<xsd:sequence> 				
-					<xsl:apply-templates select="group"/>
-				</xsd:sequence>
-			</xsd:complexType>
-		</xsd:element>
-	</xsd:schema>
-</xsl:template>
-
-
-<xsl:template match="group">
-	<xsd:element name="group">
-		<xsd:complexType>
-			<xsd:annotation>
-				<xsd:documentation>
-					<xsl:choose>
-						<xsl:when test="./groupSummary">
-							<xsl:value-of select="./groupSummary"/>
-						</xsl:when>
-						<xsl:otherwise>
-							<xsl:text>Summary for group "</xsl:text>
-							<xsl:value-of select="@name"/>
-							<xsl:text>" goes here.</xsl:text>
-						</xsl:otherwise>
-					</xsl:choose>
-				</xsd:documentation>
-				<xsd:documentation>
-					<xsl:choose>
-						<xsl:when test="./groupDetail">
-							<xsl:value-of select="./groupDetail"/>
-						</xsl:when>
-						<xsl:otherwise>
-							<xsl:text>Detail for group "</xsl:text>
-							<xsl:value-of select="@name"/>
-							<xsl:text>" goes here.</xsl:text>
-						</xsl:otherwise>
-					</xsl:choose>
-				</xsd:documentation>
-			</xsd:annotation>
-			<xsd:sequence>
-				<xsd:element name="groupSummary" type="xsd:string" minOccurs="0"/>
-				<xsd:element name="groupDetail" type="xsd:string" minOccurs="0"/>
-
-				<xsl:apply-templates select="object"/>
-			</xsd:sequence>
-			<xsl:element name="xsd:attribute">
-				<xsl:attribute name="name">
-					<xsl:text>name</xsl:text>
-				</xsl:attribute>
-				<xsl:attribute name="type">
-					<xsl:text>xsd:string</xsl:text>
-				</xsl:attribute>
-				<xsl:attribute name="fixed">
-					<xsl:value-of select="@name"/>
-				</xsl:attribute>
-			</xsl:element>
-		</xsd:complexType>
-	</xsd:element>
-</xsl:template>
-
-<xsl:template match="object">
-	<xsd:element name="object">
-		<xsd:complexType>
-			<xsd:annotation>
-				<xsd:documentation>
-					<xsl:choose>
-						<xsl:when test="./objectSummary">
-							<xsl:value-of select="./objectSummary"/>
-						</xsl:when>
-						<xsl:otherwise>
-							<xsl:text>Summary for object "</xsl:text>
-							<xsl:value-of select="@name"/>
-							<xsl:text>" goes here.</xsl:text>
-						</xsl:otherwise>
-					</xsl:choose>
-				</xsd:documentation>
-				<xsd:documentation>
-					<xsl:choose>
-						<xsl:when test="./objectDetail">
-							<xsl:value-of select="./objectDetail"/>
-						</xsl:when>
-						<xsl:otherwise>
-							<xsl:text>Detail for object "</xsl:text>
-							<xsl:value-of select="@name"/>
-							<xsl:text>" goes here.</xsl:text>
-						</xsl:otherwise>
-					</xsl:choose>
-				</xsd:documentation>
-				<xsd:appinfo>
-					<xsl:element name="unit">
-						<xsl:choose>
-							<xsl:when test="./unit">
-								<xsl:value-of select="./unit"/>
-							</xsl:when>
-							<xsl:otherwise>
-								<xsl:text>Unit of object "</xsl:text>
-								<xsl:value-of select="@name"/>
-								<xsl:text>" goes here.</xsl:text>
-							</xsl:otherwise>
-						</xsl:choose>
-					</xsl:element>
-				</xsd:appinfo>
-			</xsd:annotation>
-			<xsd:sequence>
-				<xsd:element name="objectSummary" type="xsd:string" minOccurs="0"/>
-				<xsd:element name="objectDetail" type="xsd:string" minOccurs="0"/>
-				<xsd:element name="numberOfElements" type="xsd:integer" minOccurs="0"/>
-				<xsd:element name="dataType" type="xsd:string" minOccurs="0"/>
-				<xsd:element name="unit" type="xsd:string" minOccurs="0"/>
-				
-				<xsl:choose>
-					<xsl:when test="./dataType = 'complex'">
-						<xsl:element name="xsd:element">
-							<xsl:attribute name="name">
-								<xsl:text>complex</xsl:text>
-							</xsl:attribute>
-							<xsl:attribute name="minOccurs">
-								<xsl:value-of select="./numberOfElements"/>
-							</xsl:attribute>
-							<xsl:attribute name="maxOccurs">
-								<xsl:value-of select="./numberOfElements"/>
-							</xsl:attribute>
-
-							<xsd:complexType>
-								<xsd:sequence>
-									<xsl:element name="xsd:element">
-										<xsl:attribute name="name">
-											<xsl:text>value</xsl:text>
-										</xsl:attribute>
-										<xsl:attribute name="type">
-											<xsl:value-of select=".//value[1]/@type"/>
-										</xsl:attribute>
-										<xsl:attribute name="minOccurs">
-											<xsl:value-of select="2"/>
-										</xsl:attribute>
-										<xsl:attribute name="maxOccurs">
-											<xsl:value-of select="2"/>
-										</xsl:attribute>
-										
-										<xsd:complexType>
-											<xsd:sequence>
-											</xsd:sequence>
-											
-											<xsl:element name="xsd:attribute">
-												<xsl:attribute name="name">
-													<xsl:text>size</xsl:text>
-												</xsl:attribute>
-												<xsl:attribute name="type">
-													<xsl:text>xsd:integer</xsl:text>
-												</xsl:attribute>
-												<xsl:attribute name="default">
-													<xsl:value-of select="./dataSize"/>
-												</xsl:attribute>
-											</xsl:element>
-										</xsd:complexType>
-																				
-									</xsl:element>
-									
-								</xsd:sequence>
-							</xsd:complexType>
-							
-						</xsl:element>
-					</xsl:when>
-					
-					<xsl:otherwise>
-						<xsl:element name="xsd:element">
-							<xsl:attribute name="name">
-								<xsl:text>value</xsl:text>
-							</xsl:attribute>
-							<xsl:attribute name="type">
-								<xsl:value-of select="./dataType"/>
-							</xsl:attribute>
-							<xsl:attribute name="minOccurs">
-								<xsl:value-of select="./numberOfElements"/>
-							</xsl:attribute>
-							<xsl:attribute name="maxOccurs">
-								<xsl:value-of select="./numberOfElements"/>
-							</xsl:attribute>
-							
-							<xsd:complexType>
-								<xsd:sequence>
-								</xsd:sequence>
-								
-								<xsl:element name="xsd:attribute">
-									<xsl:attribute name="name">
-										<xsl:text>size</xsl:text>
-									</xsl:attribute>
-									<xsl:attribute name="type">
-										<xsl:text>xsd:integer</xsl:text>
-									</xsl:attribute>
-									<xsl:attribute name="default">										
-										<xsl:value-of select="./dataSize"/>
-									</xsl:attribute>
-								</xsl:element>
-								
-							</xsd:complexType>
-							
-						</xsl:element>																
-					</xsl:otherwise>
-					
-				</xsl:choose>
-				
-			</xsd:sequence>
-
-			<xsl:element name="xsd:attribute">
-				<xsl:attribute name="name">
-					<xsl:text>name</xsl:text>
-				</xsl:attribute>
-				<xsl:attribute name="type">
-					<xsl:text>xsd:string</xsl:text>
-				</xsl:attribute>
-				<xsl:attribute name="fixed">
-					<xsl:value-of select="@name"/>
-				</xsl:attribute>
-			</xsl:element>
-			<xsl:if test="@index">
-				<xsl:element name="xsd:attribute">
-					<xsl:attribute name="name">
-						<xsl:text>index</xsl:text>
-					</xsl:attribute>
-					<xsl:attribute name="type">
-						<xsl:text>xsd:string</xsl:text>
-					</xsl:attribute>
-					<xsl:attribute name="default">
-						<xsl:value-of select="@index"/>
-					</xsl:attribute>
-				</xsl:element>
-			</xsl:if>			
-		</xsd:complexType>
-	</xsd:element>
-</xsl:template>
-
-
-
-</xsl:stylesheet>
-
-	</textarea>
-
-	<!-- ============= -->
-	<!-- Generated XSD -->
-	<!-- ============= -->
-
-	<input type="submit" value="Generate XSD" onclick="xmlToXsd()"/>
-
-	<input type="submit" id="xsdSwitch" value="Show XSD" onclick="toggleDisplay('xsdSwitch','xsdDisplay')"/>
-
-	<textarea style="width:100%;height:400px;font-family:consolas,'courier new',monospace;display:none;" id="xsdDisplay" wrap="logical">
-	</textarea>
-
+	<!-- ================= -->
+	<!-- Javascript source -->
+	<!-- ================= -->
 
 	<script src="nml2xml.js"></script>
-
 	
 </body>
 </html>

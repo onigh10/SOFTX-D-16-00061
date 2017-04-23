@@ -1,18 +1,40 @@
+/* NAMELIST file name and display area */
 var nmlInFile = document.getElementById("nmlInFile");
 var nmlDisplay = document.getElementById("nmlDisplay");
+
+/* XML file name and display area */
 var xmlInFile = document.getElementById("xmlInFile");
 var xmlDisplay = document.getElementById("xmlDisplay");
+
+/* Template XML file name and display area */
+var templateInFile = document.getElementById("templateInFile");
+var templateDisplay = document.getElementById("templateDisplay");
+
+/* Embedded display area for XSLT for pretty print */
 var xslt4IndentDisplay = document.getElementById("xslt4IndentDisplay");
 var xslt4AltIndentDisplay = document.getElementById("xslt4AltIndentDisplay");
+
+/* Embedded display area for XSLT for XML to NAMELIST conversion */
 var xslt4NmlDisplay = document.getElementById("xslt4NmlDisplay");
 var xslt4HtmlDisplay = document.getElementById("xslt4HtmlDisplay");
+
+/* Generated web input form */
 var htmlDisplay = document.getElementById("htmlDisplay");
+
+/* Embedded display area for XSLT for HTML to XML conversion and display area for distilled XML */
 var xslt4HtmlToXmlDisplay = document.getElementById("xslt4HtmlToXmlDisplay");
 var distilledXmlDisplay = document.getElementById("distilledXmlDisplay");
-var xslt4XsdDisplay = document.getElementById("xslt4XsdDisplay");
-var xsdDisplay = document.getElementById("xsdDisplay");
 
+/*
+ * Add event handlers to file inputs to catch input change
+ * and to text panes to load files that are dragged onto them.
+ */
 window.onload = function() {
+
+	nmlInFile.addEventListener('change', function(e) {
+		var file = nmlInFile.files[0];
+		loadText( file, nmlDisplay );
+	}, false);
 
 	nmlInFile.addEventListener('change', function(e) {
 		var file = nmlInFile.files[0];
@@ -22,6 +44,11 @@ window.onload = function() {
 	xmlInFile.addEventListener('change', function(e) {
 		var file = xmlInFile.files[0];
 		loadText( file, xmlDisplay );
+	}, false);
+	
+	templateInFile.addEventListener('change', function(e) {
+		var file = templateInFile.files[0];
+		loadText( file, templateDisplay );
 	}, false);
 
 	nmlDisplay.addEventListener('dragover', function(e) {
@@ -46,6 +73,17 @@ window.onload = function() {
 
 }
 
+/*
+ * Reset form to clear the cache for some browsers.
+ */
+function resetForm( fileSelectId, displayId ) {
+	document.getElementById( fileSelectId ).reset();
+	document.getElementById( displayId ).value = "";
+}
+
+/*
+ * Load file and display its contents to displayTarget.
+ */
 function loadText( file, displayTarget ) {
 	var reader = new FileReader();
 	reader.onload = function( event ) {
@@ -54,12 +92,19 @@ function loadText( file, displayTarget ) {
 	reader.readAsText( file );
 }
 
+/*
+ * Reload the previously selected file in inputFileId and display
+ * its contents to displayTargetId.
+ */
 function reloadText( inputFileId, displayTargetId ) {
 	var file = document.getElementById( inputFileId ).files[0];	
 	var displayTarget = document.getElementById( displayTargetId );		
 	loadText( file, displayTarget );
 }
 
+/*
+ * Save the contents of displayedText to outputFile.
+ */
 function saveText( displayedText, outputFile )
 {
 	var textToWrite = document.getElementById( displayedText ).value;
@@ -84,6 +129,9 @@ function saveText( displayedText, outputFile )
 	}
 }
 
+/*
+ * Toggle between detailId's show and hide, and change the icon of foldId.
+ */
 function toggleFold( foldId, detailId ) {
 	var foldId = document.getElementById( foldId );
 	var foldState = foldId.getAttribute("data-fold");
@@ -104,12 +152,48 @@ function toggleFold( foldId, detailId ) {
 	}
 }
 
+/*
+ * Get the currently selected item of selectId pulldown menu
+ * and save the result into selectId's data-type attribute.
+ * Also change the data-type of descendant input elements to the above type.
+ */
 function setSelected( selectId ) {
 	var selectId = document.getElementById( selectId );
 	var selectValue = selectId.value;
 	selectId.setAttribute("data-type", selectValue);
+	var valueListId = "valueList-" + selectId.getAttribute("id").replace("dataType-", "");
+
+	var valueList = document.getElementById( valueListId );
+	var len = valueList.cells.length;
+	
+	for( var i=0; i<len; i++ ) {
+		/* Select 2nd row in value list, i.e. input with text type */
+		var lst = locateTableElement( valueList.cells[i] ).tBodies[0].rows[1].cells[0];
+
+		for( var j=0; j<lst.childNodes.length; j++ ) {
+			var itm = lst.childNodes[j];
+			if( itm.nodeType == 1 ) {
+				if ( itm.nodeName == "INPUT" ) {
+					if( itm.getAttribute( "data-class" ) == "value" ) {
+						/* If complex, set data-type of value cells to real */
+						if ( selectValue == "complex" ) {
+							itm.setAttribute( "data-type", "real" );
+						}
+						else {
+							itm.setAttribute( "data-type", selectValue);
+						}
+					}
+				}					
+			}
+		}
+		
+	}
+	
 }
 
+/*
+ * Toggle between displayId's show and hide, and change the text of buttonId.
+ */
 function toggleDisplay( buttonId, displayId ) {
 	var button = document.getElementById( buttonId );
 	var display = document.getElementById( displayId ).style;
@@ -124,6 +208,9 @@ function toggleDisplay( buttonId, displayId ) {
 	}		
 }
 
+/*
+ * Join valueListId's selected value cells to a single cell and add shade.
+ */
 function contract( valueListId ) {
 	var sequential, repeat, checked, cellStart, sequentialStart;
 	var checkedStart = false;
@@ -189,6 +276,9 @@ function contract( valueListId ) {
 	}
 }
 
+/*
+ * Disjoin valueListId's selected cell aggregation to unit cells and remove shade.
+ */
 function expand( valueListId ) {
 	var sequential, repeat, checked;
 	var valueList = document.getElementById( valueListId );
@@ -247,6 +337,9 @@ function expand( valueListId ) {
 	}
 }
 
+/*
+ * Find the child node tdElm that has name TABLE.
+ */
 function locateTableElement( tdElem ) {
 	var len = tdElem.childNodes.length;
 	for( var j=0; j<len; j++ ) {
@@ -259,6 +352,9 @@ function locateTableElement( tdElem ) {
 	}
 }
 
+/*
+ * Convert NAMELIST into XML.
+ */
 function nmlToXml() {
 	var namelistString = nmlDisplay.value;
 	var tokens = parseNamelist( namelistString );
@@ -266,33 +362,46 @@ function nmlToXml() {
 	xmlDisplay.value = xmlString;
 }	
 
+/*
+ * Convert XML back to NAMELIST.
+ */
 function xmlToNml() {
 	var xmlString = xmlDisplay.value;
 	var xsltString = xslt4NmlDisplay.value;
 	nmlDisplay.value = applyXslt( xmlString, xsltString );
 }	
 
+/*
+ * Generate HTML form from XML.
+ */
 function xmlToHtml() {
 	var xmlString = xmlDisplay.value;
 	var xsltString = xslt4HtmlDisplay.value;
 	htmlDisplay.innerHTML = applyXslt( xmlString, xsltString );
-}
-
-function xmlToXsd() {
-	var xmlString = distilledXmlDisplay.value;
-	var xsltString = xslt4XsdDisplay.value;
-	if( isIndentEffective() ){
-		xsdDisplay.value = applyXslt( xmlString, xsltString );
-	} else {
-		xsdDisplay.value = prettyPrint( applyXslt( xmlString, xsltString ) );	
+	if( document.getElementById("templateCheckbox").checked ) {
+		applyXmlToHtml();
 	}
 }
 
+/*
+ * Serialize and pretty print HTML document.
+ */
 function generateHtmlSource() {
-	var xmlString = serializeXml( htmlDisplay );
+	/* 2016.09.30 Safari 10.0 stalls with "Entity 'nbsp' not defined". */
+	/*
+	 It seems, as of v10.0, in serialization, Safari replaces the space before closing tag
+	 </span> with &nbsp; which causes an error.  To prevent this, replace this entity
+	 with simple space.
+	 */ 
+	//var xmlString = serializeXml( htmlDisplay );
+	var xmlStringOrg = serializeXml( htmlDisplay );
+	var xmlString = xmlStringOrg.replace( /&nbsp;/gi, " " );
 	htmlSourceDisplay.value = prettyPrint( xmlString );
 }
 
+/*
+ * Check whether automatic indentation works for XSLT of the current browser.
+ */
 function isIndentEffective() {
 	var testString = "<a><b><c></c></b></a>";
 	xsltString = xslt4IndentDisplay.value;
@@ -307,6 +416,9 @@ function isIndentEffective() {
 	return isIndentEffective;
 }
 
+/*
+ * Add indentations to xmlString.
+ */
 function prettyPrint( xmlString ) {
 	/* xsl:output indent works for Safari, Chrome, Opera (WebKit) */
 
@@ -320,9 +432,16 @@ function prettyPrint( xmlString ) {
 
 	return applyXslt( xmlString, xsltString );
 }
-
+/*
+ * Extract NAMELIST-related data from HTML and save in the form of XML.
+ */
 function htmlToXml() {
-	var xmlString = serializeXml( htmlDisplay );
+	/* 2016.09.30 For the same reason as generateHtmlSource, to prevent an error for
+	Safari 10.0, replace &nbsp; with simple space before pretty print */
+	//var xmlString = serializeXml( htmlDisplay );
+	var xmlStringOrg = serializeXml( htmlDisplay );
+	var xmlString = xmlStringOrg.replace( /&nbsp;/gi, " " );
+
 	var xsltString = xslt4HtmlToXmlDisplay.value;
 
 	if( isIndentEffective() ) {
@@ -333,13 +452,18 @@ function htmlToXml() {
 
 }
 
+/*
+ * Copy the contents of sourceId to destId.
+ */
 function copyTextArea( sourceId, destId ) {
 	var sourceId = document.getElementById( sourceId );
 	var destId = document.getElementById( destId );
 	destId.value = sourceId.value;
 }
 
-//function applyXslt( xmlString, xsltString ) {
+/*
+ * Parse xmlStringOrg and xsltString, and apply the latter XSLT to former XML.
+ */
 function applyXslt( xmlStringOrg, xsltString ) {
 /* Internet Explorer (Microsoft Edge works fine) emits an extraneous tbody closing tag when transforming XML to HTML with XSLT, but complains that the tbody it emits does not have a matching tag in the consecutive XSLT transformation.  To work around this problem, remove this extra tag anyway. */ 
 	var xmlString = xmlStringOrg.replace( /<\/tbody>\s*<\/tbody>/gi, "</tbody>" );
@@ -386,6 +510,9 @@ function applyXslt( xmlStringOrg, xsltString ) {
 	}
 }
 
+/*
+ * Parse xmlString and return a DOM document.
+ */
 function parseXml( xmlString ) {
 	var xmlDom = null;
 	// if ( typeof ActiveXObject != "undefined" ) {
@@ -412,7 +539,9 @@ function parseXml( xmlString ) {
 	}
 	return xmlDom;
 }
-
+/*
+ * Serialize xmlDom and return a string.
+ */
 function serializeXml( xmlDom ) {
 	if ( typeof XMLSerializer != "undefined" ) {
 		var serializer = new XMLSerializer;
@@ -426,6 +555,9 @@ function serializeXml( xmlDom ) {
 	}
 }
 
+/*
+ * Translate special characters in anyString to HTML entities.
+ */
 function escapeSpecial( anyString ) {
 	var xmlValidString = "";
 	for( var i = 0; i < anyString.length; i++ ){
@@ -502,12 +634,12 @@ function parseNamelist(string)
 	var re_nondelimited_c = /([^'"\*\s,\/!&\$(=%\.][^\*\s,\/!&\$(=%\.]*)\s*,?\s*/;
 	var re_nondelimited_d = /(\d+[^\*\s\d,\/!&\$\(=%\.][^\s,\/!&\$\(=%\.]*)\s*,?\s*/;
 
-	var re_real = /(((\-|\+)?\d*\.\d*([eEdDqQ](\-|\+)?\d+)?)|((\-|\+)?\d+[eEdDqQ](\-|\+)?\d+))\s*,?\s*/;
+	var re_real = /(((-|\+)?\d*\.\d*([eEdDqQ](-|\+)?\d+)?)|((-|\+)?\d+[eEdDqQ](-|\+)?\d+))\s*,?\s*/;
 
-	var re_integer = /((\-|\+)?\d+)\b\s*,?\s*/;
+	var re_integer = /((-|\+)?\d+)\b\s*,?\s*/;
 	
 	var re_logical_c = /([tT][rR][uU][eE]|[tT]|[fF][aA][lL][sS][eE]|[fF])\s*,?\s*/;
-	var re_logical_p = /(\.(([tT][rR][uU][eE]|[[fF][aA][lL][sS][eE])\.?|[tTfF]\w*))\s*,?\s*/;
+	var re_logical_p = /(\.(([tT][rR][uU][eE]|[fF][aA][lL][sS][eE])\.?|[tTfF]\w*))\s*,?\s*/;
 	
 	var re_null = /\s*\b|\s*,\s*/;
 	
@@ -518,12 +650,10 @@ function parseNamelist(string)
 		curstr = string.substr(i);
 		// [1] EXCLAMATION MARK
 		// (1-1) a comment
-		if ( cur .match(/!/) ) {
+		if ( cur.match(/!/) ) {
 			// COMMENT
 			str = re_comment.exec(curstr);
 			if( str && ( str.index == 0 ) ) {
-				//console.log("found comment: " + str);
-				//addElement(i, "comment", str);
 				console.log("found comment: " + str[1]);
 				addElement(i, "comment", str[1]);
 
@@ -532,6 +662,7 @@ function parseNamelist(string)
 			}
 			else {
 				console.log("error at exclamation");
+				alert( "Error in comment: " + curstr.substr(1,15) );
 				break;
 			}
 		}
@@ -540,7 +671,7 @@ function parseNamelist(string)
 		else if ( cur.match(/['"]/) ) {
 			// CHARACTER CONSTANT
 			str = re_string.exec(curstr);
-			if( str && ( str.index == 0 ) ) {
+			if( str && ( str.index == 0 ) && string[i+str[1].length].match(/[,\s\)\/]/) ) {
 				console.log("found character: " + str[1]);
 				addElement(i,  "character", str[1] );
 				i += str[0].length;
@@ -548,6 +679,7 @@ function parseNamelist(string)
 			}
 			else {
 				console.log("error at quotation");
+				alert( "Error in character: " + curstr.substr(1,15) );
 				break;
 			}
 		}
@@ -586,6 +718,7 @@ function parseNamelist(string)
 			}
 			else {
 				console.log("error at ampersand");
+				alert( "Error in group: " + curstr.substr(1,15) );
 				break;
 			}
 		}
@@ -604,7 +737,7 @@ function parseNamelist(string)
 			else {				
 				// REAL			
 				str = re_real.exec(curstr);
-				if( str && ( str.index == 0 ) ) {
+				if( str && ( str.index == 0 ) && string[i+str[1].length].match(/[,\s\)\/]/) ) {
 					console.log("found real: " + str[1]);
 					addElement(i, "real", str[1]);
 					i += str[0].length;
@@ -612,6 +745,7 @@ function parseNamelist(string)
 				}
 				else {
 					console.log("error at period");
+					alert( "Error in logical or real: " + curstr.substr(1,15) );
 					break;
 				}
 			}
@@ -660,7 +794,7 @@ function parseNamelist(string)
 					{				
 						// LOGICAL CONSTANT
 						str = re_logical_c.exec(curstr);
-						if ( str && ( str.index == 0 ) ) {
+						if ( str && ( str.index == 0 ) && string[i+str[1].length].match(/[,\s\)\/]/) ) {
 							console.log("found logical: " + str[1]);
 							addElement(i, "logical", str[1]);
 							i += str[0].length;
@@ -669,7 +803,7 @@ function parseNamelist(string)
 						else {				
 							// NONDELIMITED CHARACTER CONSTANT
 							str = re_nondelimited_c.exec(curstr);
-							if( str && ( str.index == 0 ) ) {
+							if( str && ( str.index == 0 ) && string[i+str[1].length].match(/[,\s\)\/]/) ) {
 								console.log("found nondelimited: " + str[1]);
 								addElement(i, "nondelimited", str[1]);
 								i += str[0].length;
@@ -699,6 +833,7 @@ function parseNamelist(string)
 			}
 			else {
 				console.log("error at complex start");
+				alert( "Error in complex: " + curstr.substr(1,15) );
 				break;
 			}
 		}
@@ -715,6 +850,7 @@ function parseNamelist(string)
 			}
 			else {
 				console.log("error at complex end");
+				alert( "Error in complex: " + curstr.substr(1,15) );
 				break;
 			}
 		}
@@ -723,7 +859,7 @@ function parseNamelist(string)
 		// (9-2) an integer constant
 		else if( cur.match(/[\+\-]/) ) {
 			str = re_real.exec(curstr);
-			if( str && ( str.index == 0 ) ) {
+			if( str && ( str.index == 0 ) && string[i+str[1].length].match(/[,\s\)\/]/) ) {
 				// REAL
 				console.log("found real: " + str[1]);
 				addElement(i, "real", str[1]);
@@ -732,7 +868,7 @@ function parseNamelist(string)
 			}
 			else {
 				str = re_integer.exec(curstr);
-				if( str && ( str.index == 0 ) ) {
+				if( str && ( str.index == 0 ) && string[i+str[1].length].match(/[,\s\)\/]/) ) {
 					// INTEGER
 					console.log("found integer: " + str[1]);
 					addElement(i, "integer", str[1]);
@@ -741,6 +877,7 @@ function parseNamelist(string)
 				}
 				else {
 					console.log("error at +-.");
+					alert( "Error in real or integer: " + curstr.substr(1,15) );
 					break;
 				}
 			}
@@ -761,7 +898,7 @@ function parseNamelist(string)
 			}			
 			else {	
 				str = re_real.exec(curstr);
-				if( str && ( str.index == 0 ) ) {
+				if( str && ( str.index == 0 ) && string[i+str[1].length].match(/[,\s\)\/]/) ) {
 					// REAL
 					console.log("found real: " + str[1]);
 					addElement(i, "real", str[1]);
@@ -770,7 +907,7 @@ function parseNamelist(string)
 				}
 				else {
 					str = re_integer.exec(curstr);
-					if( str && ( str.index == 0 ) ) {
+					if( str && ( str.index == 0 ) && string[i+str[1].length].match(/[,\s\)\/]/) ) {
 						// INTEGER
 						console.log("found integer: " + str[1]);
 						addElement(i, "integer", str[1]);
@@ -779,7 +916,7 @@ function parseNamelist(string)
 					}
 					else {
 						str = re_nondelimited_d.exec(curstr);
-						if( str && ( str.index == 0 ) ) {
+						if( str && ( str.index == 0 ) && string[i+str[1].length].match(/[,\s\)\/]/) ) {
 							// NONDELIMITED CHARACTER CONSTANT
 							console.log("found nondelimited: " + str[1]);
 							addElement(i, "nondelimited", str[1]);
@@ -788,6 +925,7 @@ function parseNamelist(string)
 						}
 						else {
 							console.log("error at digit");
+							alert( "Error in real or integer or repeat: " + curstr.substr(1,15) );
 							break;
 						}
 					}				
@@ -828,6 +966,8 @@ function tokensToXml( tokens ) {
 	var xmlString = "";
 	var prev = null;
 	var ind = 0;
+	var cmplx = null;
+	var numOfVals = 0;
 	
 	xmlString += "<namelist>\n";
 	ind++;
@@ -847,6 +987,11 @@ function tokensToXml( tokens ) {
 				ind++;
 			}
 			else {
+				if ( numOfVals == 0 ) {
+					ind++;
+					xmlString += indent(ind) + "<value type=\"null\"></value>\n";
+					ind--;
+				}
 				ind--;
 				xmlString += indent(ind) + "</object>\n"
 				ind--;
@@ -855,14 +1000,25 @@ function tokensToXml( tokens ) {
 		}
 		else if ( name == "object" ) {
 			if ( prev != "group" && prev != "comment" ) {
+				if ( numOfVals == 0 ) {
+					ind++;
+					xmlString += indent(ind) + "<value type=\"null\"></value>\n";
+					ind--;
+				}
 				ind--;
 				xmlString += indent(ind) + "</object>\n";
 			}
 			xmlString += indent(ind) +"<object name=\"" + value + "\">\n";
 			ind++;
+			numOfVals = 0;
 		}
 		else if ( name == "array" ) {
 			if ( prev != "group" ) {
+				if ( numOfVals == 0 ) {
+					ind++;
+					xmlString += indent(ind) + "<value type=\"null\"></value>\n";
+					ind--;
+				}
 				ind--;
 				xmlString += indent(ind) + "</object>\n";
 			}
@@ -870,6 +1026,7 @@ function tokensToXml( tokens ) {
 				+ "\" index=\"" + index +  "\">\n";
 			ind++;
 			name = "object";
+			numOfVals = 0;
 		}
 		else if ( name == "repeat" ) {
 			xmlString += indent(ind) + "<repeat times=\"" + value + "\">\n";
@@ -883,6 +1040,8 @@ function tokensToXml( tokens ) {
 			if ( value == "start" ) {
 				xmlString += indent(ind) + "<complex>\n";
 				ind++;
+				cmplx = "re";
+				numOfVals++;
 			}
 			else {
 				ind--;
@@ -897,10 +1056,32 @@ function tokensToXml( tokens ) {
 			if ( name == "character" || name == "nondelimited" ) {
 				xmlString += indent(ind) + "<value type=\"" + name + "\">" 
 				+ escapeSpecial(value) + "</value>\n";
+				numOfVals++;
 			}
 			else {
-				xmlString += indent(ind) + "<value type=\"" + name + "\">" 
-				+ value + "</value>\n";
+				if ( cmplx == null ) {
+					xmlString += indent(ind) + "<value type=\"" + name + "\">" 
+					+ value + "</value>\n";
+					numOfVals++;
+				}
+				else if ( cmplx == "re" ) {
+					xmlString += indent(ind) + "<re>\n";
+					ind++;
+					xmlString += indent(ind) + "<value type=\"" + name + "\">" 
+					+ value + "</value>\n";
+					ind--;
+					xmlString += indent(ind) + "</re>\n";
+					cmplx = "im";
+				}
+				else {
+					xmlString += indent(ind) + "<im>\n";
+					ind++;
+					xmlString += indent(ind) + "<value type=\"" + name + "\">" 
+					+ value + "</value>\n";
+					ind--;
+					xmlString += indent(ind) + "</im>\n";
+					cmplx = null;				
+				}
 			}
 			
 			if ( prev == "repeat" ) {
@@ -916,4 +1097,303 @@ function tokensToXml( tokens ) {
 	ind--;
 	xmlString += "</namelist>";
 	return xmlString;
+}
+
+/* 
+ * Check input value.
+ * If input is invalid, show an alert box and revert to the original value.
+ */
+function checkInput( obj ) {
+
+	var newInput = obj.value;
+	var curValue = obj.getAttribute("value");
+	var rgex = null;
+	//var type = obj.getAttribute("data-type");
+	var str = null;
+	var parentObject = findParentObject( obj );
+	var parentObjectName = parentObject.getAttribute("id").replace("object-","");
+	var dataTypeId = "dataType-" + parentObjectName;
+	var type = document.getElementById( dataTypeId ).getAttribute("data-type");
+	
+	if ( type == "character" ) {
+		rgex = /^('((?:[^']+|'')*)'|"((?:[^"]+|"")*)")$/;
+	}
+	else if ( type == "nondelimited" ) {
+		rgex = /^(([^'"\*\s,\/!&\$(=%\.][^\*\s,\/!&\$(=%\.]*)|(\d+[^\*\s\d,\/!&\$\(=%\.][^\s,\/!&\$\(=%\.]*))$/;
+	}
+	else if ( type == "real" | type == "complex" ) {
+		rgex = /^(((-|\+)?\d*\.\d*([eEdDqQ](-|\+)?\d+)?)|((-|\+)?\d+[eEdDqQ](-|\+)?\d+))$/;
+	}
+	else if ( type == "integer" ) {
+		rgex = /^((-|\+)?\d+)$/;
+	}
+	else if ( type == "logical" ) {
+		rgex = /^(([tT][rR][uU][eE]|[tT]|[fF][aA][lL][sS][eE]|[fF])|(\.(([tT][rR][uU][eE]|[fF][aA][lL][sS][eE])\.?|[tTfF]\w*)))$/;
+	}
+
+	str = rgex.exec( newInput );
+
+	if ( !str ) {
+		alert("Object '" + parentObjectName + "' must be " + type + ": " + newInput );
+		obj.value = curValue;
+	}
+	else {
+		obj.setAttribute("value", newInput);
+	}
+	
+}
+
+
+function applyXmlToHtml() {
+/* > Check DOM Level 3 XPath availability */
+//	var supportsXPath = document.implementation.hasFeature("XPath", "3.0");
+	//console.log("DOM Level 3 supports: " + supportsXPath);
+//	if( supportsXPath ) {
+		var xmlString = templateDisplay.value;
+		var xmlDom = parseXml( xmlString );
+		scanXmlAndChangeHtml( xmlDom );
+//	}
+//	else {
+//		alert("Cannot proceed because DOM Level 3 is not supported in this browser.");
+//	}
+ }
+
+ 
+/*
+ * Node types of DOM document
+ */
+/*
+nodeType                  % nodeName              % nodeValue       % possible children
+ 1 element                % element name          % null            % element, text, comment, processing instruction, CDATA section, entity reference
+ 2 attribute              % attribute name        % attribute value % text, entity reference
+ 3 text                   % #text                 % node content    % none
+ 4 CDATA section          % #cdata-section        % node content    % none
+ 5 entity reference       % entity reference name % null            % element, processing instruction, comment, text, CDATA section, entity reference
+ 6 entity                 % entity name           % null            % element, processing instruction, comment, text, CDATA section, entity reference
+ 7 processing instruction % target                % null            % none
+ 8 comment                % #comment              % node content    % none
+ 9 document (DOM root)    % #document             % null            % element, processing instruction, comment, document type
+10 document type          % doctype name          % null            % none
+11 document fragment      % #document fragment    % null            % element, processing instruction, comment, text, CDATA section, entity reference
+12 notation               % notation name         % null            % none
+*/
+
+
+/*
+ * Scan template XML and change the following contents of HTML to those of the template
+ *   groupSummary, groupDetail,
+ *   objectSummary, objectDetail, numberOfElements, dataType, dataSize, unit.
+ * Though the properties of each value element can be accessed, they are not used in this implementation.
+ */
+function scanXmlAndChangeHtml( xmlDom ) {
+
+	var groups = xmlDom.documentElement.getElementsByTagName("group");
+	
+	for ( var i=0; i < groups.length; i++ ) {
+		var group = groups[i];
+			
+		var groupName = group.getAttribute("name");
+		console.log( "group: " + groupName );
+
+		var groupSummary = group.getElementsByTagName("groupSummary");
+		if( groupSummary.length !== 0 ) {
+			//var groupSummaryValue = groupSummary[0].textContent; Does not work in IE
+			var groupSummaryValue = groupSummary[0].childNodes[0].nodeValue;
+			console.log( "  groupSummary: " + groupSummaryValue );
+			var groupSummaryId = "groupSummary-" + groupName;
+			var groupSummaryElement = document.getElementById( groupSummaryId );
+			if( groupSummaryElement !== null ) {
+				groupSummaryElement.textContent = groupSummaryValue;
+			}
+			else {
+				alert( "Group summary for '" + groupName + "' not found." );
+			}
+		}
+			
+		var groupDetail = group.getElementsByTagName("groupDetail");
+		if( groupDetail.length !== 0 ) {
+			var groupDetailValue = groupDetail[0].childNodes[0].nodeValue;
+			console.log( "  groupDetail: " + groupDetailValue );
+			var groupDetailId = "groupDetail-" + groupName;
+			var groupDetailElement = document.getElementById( groupDetailId );
+			if( groupDetailElement !== null ) {
+				groupDetailElement.textContent = groupDetailValue;
+			}
+			else {
+				alert( "Group detail for '" + groupName + "' not found." );
+			}
+		}
+						
+		var objects = group.getElementsByTagName("object");
+
+		for ( var j=0; j < objects.length; j++ ) {
+			var object = objects[j];				
+			var objectName = object.getAttribute("name");
+			var objectIndex = object.getAttribute("index");
+			console.log( "  object: " + objectName + " index: " + objectIndex );
+			
+			var objectNameIndex = objectName;
+			if( objectIndex !== null ) {
+				objectNameIndex += objectIndex;
+			}
+
+			var objectSummary = object.getElementsByTagName("objectSummary");
+			if( objectSummary.length !== 0 ) {
+				var objectSummaryValue = objectSummary[0].childNodes[0].nodeValue;
+				console.log( "  objectSummary: " + objectSummaryValue );
+				var objectSummaryId = "objectSummary-" + objectNameIndex;
+				var objectSummaryElement = document.getElementById( objectSummaryId );
+				if( objectSummaryElement !== null ) {
+					objectSummaryElement.textContent = objectSummaryValue;
+				}
+				else {
+					alert( "Object summary for '" + objectNameIndex + "' not found." );
+				}
+			}
+			
+			var objectDetail = object.getElementsByTagName("objectDetail");
+			if( objectDetail.length !== 0 ) {
+				var objectDetailValue = objectDetail[0].childNodes[0].nodeValue;
+				console.log( "  objectDetail: " + objectDetailValue );
+				var objectDetailId = "objectDetail-" + objectNameIndex;
+				var objectDetailElement = document.getElementById( objectDetailId );
+				if( objectDetailElement !== null ) {
+					objectDetailElement.textContent = objectDetailValue;
+				}
+				else {
+					alert( "Object detail for '" + objectNameIndex + "' not found." );
+				}
+			}
+
+			var numberOfElements = object.getElementsByTagName("numberOfElements");
+			if( numberOfElements.length !== 0 ) {
+				var numberOfElementsValue = numberOfElements[0].childNodes[0].nodeValue;
+				console.log( "    numberOfElements: " + numberOfElementsValue );
+				var numberOfElementsId = "numberOfElements-" + objectNameIndex;
+				var numberOfElementsElement = document.getElementById( numberOfElementsId );
+				if( numberOfElementsElement !== null ) {
+					numberOfElementsElement.textContent = numberOfElementsValue;
+				}
+				else {
+					alert( "Number of elements for '" + objectNameIndex + "' not found." );
+				}
+			}
+
+			var dataType = object.getElementsByTagName("dataType");
+			if( dataType.length !== 0 ) {
+				var dataTypeValue = dataType[0].childNodes[0].nodeValue;
+				console.log( "    dataType: " + dataTypeValue );
+				var dataTypeId = "dataType-" + objectNameIndex;
+				var dataTypeElement = document.getElementById( dataTypeId );
+				if( dataTypeElement !== null ) {
+					dataTypeElement.setAttribute( "data-type", dataTypeValue );
+					dataTypeElement.value = dataTypeValue;
+				}
+				else {
+					alert( "Data type for '" + objectNameIndex + "' not found." );
+				}
+			}
+
+			var dataSize = object.getElementsByTagName("dataSize");
+			if( dataSize.length !== 0 ) {
+				var dataSizeValue = dataSize[0].childNodes[0].nodeValue;
+				console.log( "    dataSize: " + dataSizeValue );
+				var dataSizeId = "dataSize-" + objectNameIndex;
+				var dataSizeElement = document.getElementById( dataSizeId );
+				if( dataSizeElement !== null ) {
+					dataSizeElement.textContent = dataSizeValue;
+				}
+				else {
+					alert( "Data size for '" + objectNameIndex + "' not found." );
+				}
+			}
+
+			var unit = object.getElementsByTagName("unit");
+			if( unit.length !== 0 ) {
+				var unitValue = unit[0].childNodes[0].nodeValue;
+				console.log( "    unit: " + unitValue );
+				var unitId = "unit-" + objectNameIndex;
+				var unitElement = document.getElementById( unitId );
+				if( unitElement !== null ) {
+					unitElement.textContent = unitValue;
+				}
+				else {
+					alert( "Unit for '" + objectNameIndex + "' not found." );
+				}
+			}
+
+/* >>> Individual values can be accessed, but not used in this implementation */
+/* Does not work in IE
+			var elements = xmlDom.evaluate("value|repeat|complex", object, null, XPathResult.ORDERED_NODE_ITERATOR_TYPE, null);
+			if( elements !== null ) {
+				var element = elements.iterateNext();
+				while (element) {
+					var elementName = element.nodeName;
+					console.log("      element: " + elementName );
+					
+					if( elementName == "repeat" ) {
+						var times = element.getAttribute("times");
+						console.log( "        times: " + times );
+						var complex = element.getElementsByTagName("complex");
+						if( complex.length == 0 ) {
+							var value = element.getElementsByTagName("value");
+							var valueType = value[0].getAttribute("type");
+							console.log("          value[" + valueType + "]: " + value[0].textContent);
+						}
+						else {
+							console.log("          complex");
+							var reValue = complex[0].getElementsByTagName("re")[0].getElementsByTagName("value");
+							console.log("            re: " + reValue[0].textContent);
+							var imValue = complex[0].getElementsByTagName("im")[0].getElementsByTagName("value");
+							console.log("            im: " + imValue[0].textContent);
+						}
+					}
+					else if( elementName == "complex" ) {
+						var reValue = element.getElementsByTagName("re")[0].getElementsByTagName("value");
+						console.log("        re: " + reValue[0].textContent);
+						var imValue = element.getElementsByTagName("im")[0].getElementsByTagName("value");
+						console.log("        im: " + imValue[0].textContent);
+					} 
+					else {
+						var valueType = element.getAttribute("type");
+						console.log("        value[" + valueType + "]: " + element.textContent );
+					}
+					
+					element = elements.iterateNext();
+				} //element loop
+			} // if elements exist
+*/			
+/* <<< Not used in this implementation */			
+			
+		} //object loop
+	} //group loop
+}
+
+/*
+ * Find the parent object-element of obj
+ */
+function findParentObject( obj ) {
+	//console.log("nodeName: " + obj.nodeName );
+	var dataClass = obj.getAttribute("data-class");
+	if( dataClass == "object") {
+		//console.log("dataName: " + obj.getAttribute("data-name") );
+		//return obj.getAttribute("data-name");
+		return obj;
+	}
+	else {
+		 return findParentObject( obj.parentNode );
+	}
+}
+
+/*
+ * Check data types of input values after NAMELIST is loaded.
+ */
+function checkValues() {
+	var values = document.getElementsByTagName("input");
+	for( var i=0; i < values.length; i++) {
+		//console.log(i + " value: " + values[i].textContent);
+		if( values[i].getAttribute("data-class") == "value" ) {
+			checkInput( values[i] );
+		}
+	}
 }

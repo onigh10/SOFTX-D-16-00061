@@ -1,4 +1,3 @@
-
 <namelist>
   <group name="Planet">
     <groupSummary>Physical data</groupSummary>
@@ -79,16 +78,28 @@
       <dataSize>4</dataSize>
       <unit>unit</unit>
       <complex>
-        <value type="real">1</value>
-        <value type="real">0</value>
+        <re>
+          <value type="real">1</value>
+        </re>
+        <im>
+          <value type="real">0</value>
+        </im>
       </complex>
       <complex>
-        <value type="real">-0.5</value>
-        <value type="real">0.86625</value>
+      	<re>
+       	  <value type="real">-0.5</value>
+       	</re>
+       	<im>
+          <value type="real">0.86625</value>
+        </im>
       </complex>
       <complex>
-        <value type="real">-0.5</value>
-        <value type="real">-0.86625</value>
+      	<re>
+          <value type="real">-0.5</value>
+        </re>
+        <im>
+          <value type="real">-0.86625</value>
+        </im>
       </complex>
     </object>
   </group>

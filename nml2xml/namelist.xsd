@@ -1,0 +1,236 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+
+	<xsd:simpleType name="fortranNameType">
+		<xsd:restriction base="xsd:Name">
+			<xsd:pattern value="[\i-[:\.]][\c-[:\.]]*"/>
+			<xsd:maxLength value="31"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	
+	<xsd:simpleType name="fortranTypeNameType">
+		<xsd:restriction base="xsd:string">
+			<xsd:enumeration value="character"/>
+			<xsd:enumeration value="nondelimited"/>
+			<xsd:enumeration value="complex"/>
+			<xsd:enumeration value="real"/>
+			<xsd:enumeration value="integer"/>
+			<xsd:enumeration value="logical"/>
+			<xsd:enumeration value="null"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	
+	<xsd:complexType name="valueType" mixed="true">
+		<xsd:sequence>
+		</xsd:sequence>
+		<xsd:attribute name="type">
+			<xsd:simpleType>
+				<xsd:restriction base="xsd:string">
+					<xsd:enumeration value="character"/>
+					<xsd:enumeration value="nondelimited"/>
+					<xsd:enumeration value="real"/>
+					<xsd:enumeration value="integer"/>
+					<xsd:enumeration value="logical"/>
+					<xsd:enumeration value="null"/>
+				</xsd:restriction>
+			</xsd:simpleType>
+		</xsd:attribute>
+	</xsd:complexType>
+
+	<xsd:complexType name="characterType">
+		<xsd:simpleContent>
+			<xsd:restriction base="valueType">
+				<xsd:simpleType>
+					<xsd:restriction base="xsd:string">
+						<xsd:pattern value="(&#x27;(([^&#x27;]+|&#x27;&#x27;)*)&#x27;|&#x22;(([^&#x22;]+|&#x22;&#x22;)*)&#x22;)"/>
+					</xsd:restriction>
+				</xsd:simpleType>
+			</xsd:restriction>
+		</xsd:simpleContent>
+	</xsd:complexType>
+
+	<xsd:complexType name="nondelimitedType">
+		<xsd:simpleContent>
+			<xsd:restriction base="valueType">
+				<xsd:simpleType>
+					<xsd:restriction base="xsd:string">
+						<xsd:pattern value="(([^\s&#x27;&#x22;&#x2a;&#x2c;&#x2f;&#x21;&#x26;&#x24;&#x28;&#x3d;&#x25;&#x2e;][^\s&#x2a;&#x2c;&#x2f;&#x21;&#x26;&#x24;&#x28;&#x3d;&#x25;&#x2e;]*)|(\d+[^\s&#x2a;\d&#x2c;&#x2f;&#x21;&#x26;&#x24;&#x28;&#x3d;&#x25;&#x2e;][^\s&#x2c;&#x2f;&#x21;&#x26;&#x24;&#x28;&#x3d;&#x25;&#x2e;]*))"/>
+					</xsd:restriction>
+				</xsd:simpleType>
+			</xsd:restriction>
+		</xsd:simpleContent>
+	</xsd:complexType>
+
+	<xsd:complexType name="realType">
+		<xsd:simpleContent>
+			<xsd:restriction base="valueType">
+				<xsd:simpleType>
+					<xsd:restriction base="xsd:string">
+						<xsd:pattern value="(((-|\+)?\d*\.\d*([eEdDqQ](-|\+)?\d+)?)|((-|\+)?\d+[eEdDqQ](-|\+)?\d+))"/>
+					</xsd:restriction>
+				</xsd:simpleType>
+			</xsd:restriction>
+		</xsd:simpleContent>
+	</xsd:complexType>
+
+	<xsd:complexType name="integerType">
+		<xsd:simpleContent>
+			<xsd:restriction base="valueType">
+				<xsd:simpleType>
+					<xsd:restriction base="xsd:string">
+						<xsd:pattern value="((-|\+)?\d+)"/>
+					</xsd:restriction>
+				</xsd:simpleType>
+			</xsd:restriction>
+		</xsd:simpleContent>
+	</xsd:complexType>
+
+	<xsd:complexType name="logicalType">
+		<xsd:simpleContent>
+			<xsd:restriction base="valueType">
+				<xsd:simpleType>
+					<xsd:restriction base="xsd:string">
+						<xsd:pattern value="(([tT][rR][uU][eE]|[tT]|[fF][aA][lL][sS][eE]|[fF])|(\.(([tT][rR][uU][eE]|[fF][aA][lL][sS][eE])\.?|[tTfF]\w*)))"/>
+					</xsd:restriction>
+				</xsd:simpleType>
+			</xsd:restriction>
+		</xsd:simpleContent>
+	</xsd:complexType>
+
+	<xsd:complexType name="nullType">
+		<xsd:simpleContent>
+			<xsd:restriction base="valueType">
+				<xsd:simpleType>
+					<xsd:restriction base="xsd:string">
+						<xsd:pattern value=""/>
+					</xsd:restriction>
+				</xsd:simpleType>
+			</xsd:restriction>
+		</xsd:simpleContent>
+	</xsd:complexType>
+
+	<xsd:simpleType name="indexType">
+		<xsd:restriction base="xsd:string">
+			<xsd:pattern value="(\(\s*((\s*:\s*(-|\+)?\d*){1,2}|((-|\+)?\d+(\s*:\s*(\-|\+)?\d*){0,2}))(\s*,\s*(((-|\+)?\d*(\s*:\s*(-|\+)?\d*){0,2})))*\s*\)(\s*\(\s*(:\s*\d*|\d+(\s*:\s*\d*)?)\s*\))?)"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+
+	<xsd:element name="namelist">
+		<xsd:complexType>
+			<xsd:all>
+				<xsd:element ref="group" maxOccurs="unbounded"/>
+				<xsd:element ref="orphan" minOccurs="0" maxOccurs="unbounded"/>
+			</xsd:all>
+		</xsd:complexType>
+	</xsd:element>
+
+	<xsd:element name="group">
+		<xsd:complexType>
+			<xsd:sequence>
+				<xsd:element ref="comment" minOccurs="0"/>
+				<xsd:element ref="groupSummary"/>
+				<xsd:element ref="comment" minOccurs="0"/>				
+				<xsd:element ref="groupDetail"/>
+				<xsd:element ref="comment" minOccurs="0"/>				
+				<xsd:element ref="object" maxOccurs="unbounded"/>
+				<xsd:element ref="comment" minOccurs="0"/>				
+			</xsd:sequence>
+			<xsd:attribute name="name" use="required" type="fortranNameType"/>
+		</xsd:complexType>
+	</xsd:element>
+
+	<xsd:element name="groupSummary" type="xsd:string"/>
+	<xsd:element name="groupDetail" type="xsd:string"/>
+	<xsd:element name="comment" type="xsd:string"/>
+	<xsd:element name="orphan" type="xsd:string"/>
+
+	<xsd:element name="object">
+		<xsd:complexType>
+			<xsd:sequence>
+				<xsd:element ref="comment" minOccurs="0"/>
+				<xsd:element ref="objectSummary"/>
+				<xsd:element ref="comment" minOccurs="0"/>				
+				<xsd:element ref="objectDetail"/>
+				<xsd:element ref="comment" minOccurs="0"/>				
+				<xsd:element ref="numberOfElements"/>
+				<xsd:element ref="comment" minOccurs="0"/>				
+				<xsd:element ref="dataType"/>
+				<xsd:element ref="comment" minOccurs="0"/>				
+				<xsd:element ref="dataSize"/>
+				<xsd:element ref="comment" minOccurs="0"/>				
+				<xsd:element ref="unit"/>
+				<xsd:element ref="comment" minOccurs="0"/>				
+				<xsd:choice>
+					<xsd:element ref="complex" maxOccurs="unbounded"/>
+					<xsd:element ref="value" maxOccurs="unbounded"/>
+					<xsd:element ref="repeat" maxOccurs="unbounded"/>
+				</xsd:choice>
+				<xsd:element ref="comment" minOccurs="0"/>				
+			</xsd:sequence>
+			<xsd:attribute name="name" use="required" type="fortranNameType"/>
+			<xsd:attribute name="index" type="indexType"/>
+		</xsd:complexType>
+	</xsd:element>
+
+	<xsd:element name="objectSummary" type="xsd:string"/>
+	<xsd:element name="objectDetail" type="xsd:string"/>
+	<xsd:element name="numberOfElements" type="xsd:integer"/>
+	<xsd:element name="dataType" type="fortranTypeNameType"/>
+	<xsd:element name="dataSize" type="xsd:integer"/>
+	<xsd:element name="unit" type="xsd:string"/>
+
+	<xsd:element name="complex">
+		<xsd:complexType>
+			<xsd:sequence>
+				<xsd:element ref="re"/>
+				<xsd:element ref="im"/>
+			</xsd:sequence>
+		</xsd:complexType>
+	</xsd:element>
+
+	<xsd:element name="re">
+		<xsd:complexType>
+			<xsd:sequence>
+				<xsd:element name="value" type="valueType">
+					<xsd:alternative test="@type='real'" type="realType"/>
+					<xsd:alternative test="@type='integer'" type="integerType"/>
+					<xsd:alternative type="xsd:error"/>
+				</xsd:element>
+			</xsd:sequence>
+		</xsd:complexType>
+	</xsd:element>
+		
+	<xsd:element name="im">
+		<xsd:complexType>
+			<xsd:sequence>
+				<xsd:element name="value" type="valueType">
+					<xsd:alternative test="@type='real'" type="realType"/>
+					<xsd:alternative test="@type='integer'" type="integerType"/>
+					<xsd:alternative type="xsd:error"/>
+				</xsd:element>
+			</xsd:sequence>
+		</xsd:complexType>
+	</xsd:element>
+
+	<xsd:element name="repeat">
+		<xsd:complexType>
+			<xsd:sequence>
+				<xsd:choice>
+					<xsd:element ref="value"/>
+					<xsd:element ref="complex"/>
+				</xsd:choice>
+			</xsd:sequence>
+			<xsd:attribute name="times" use="required" type="xsd:integer"/>
+		</xsd:complexType>
+	</xsd:element>
+
+	<xsd:element name="value" type="valueType">
+		<xsd:alternative test="@type='character'" type="characterType"/>
+		<xsd:alternative test="@type='nondelimited'" type="nondelimitedType"/>
+		<xsd:alternative test="@type='real'" type="realType"/>
+		<xsd:alternative test="@type='integer'" type="integerType"/>
+		<xsd:alternative test="@type='logical'" type="logicalType"/>
+		<xsd:alternative test="@type='null'" type="nullType"/>
+	</xsd:element>
+
+</xsd:schema>
